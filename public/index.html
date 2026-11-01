@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamFlow — Task Planner</title>
+  <meta name="description" content="Microsoft Planner-inspired local team task management application with subsystem isolation and role-based access." />
+  <meta name="theme-color" content="#0f0f1a" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/assets/icon-512.jpg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TeamFlow" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Icons: Lucide -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/board.css" />
+  <link rel="stylesheet" href="/css/modal.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+
+  <!-- iOS / Capacitor meta -->
+  <meta name="theme-color" content="#007AFF" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <!-- Config must load before api.js -->
+  <script src="/js/config.js"></script>
+</head>
+<body>
+
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <section id="login-screen" class="login-screen">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">
+          <svg width="34" height="34" viewBox="0 0 28 28" fill="none">
+            <path d="M7 14L11 18L21 8" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="auth-title">TeamFlow</h1>
+        <p class="auth-subtitle">Sign in to your team workspace</p>
+      </div>
+
+      <form id="login-form">
+        <div id="login-error" class="auth-error-msg hidden">
+          <i data-lucide="alert-circle" size="16"></i>
+          <span id="login-error-text">Invalid username or password</span>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="login-username">Username</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon"><i data-lucide="user" size="18"></i></span>
+            <input type="text" id="login-username" class="auth-input" placeholder="e.g. admin or username" autocomplete="username" required />
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="login-password">Password</label>
+          <div class="auth-input-wrap">
+            <span class="auth-input-icon"><i data-lucide="lock" size="18"></i></span>
+            <input type="password" id="login-password" class="auth-input" placeholder="••••••••" autocomplete="current-password" required />
+          </div>
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="auth-submit-btn">
+          <span id="login-btn-text">Sign In</span>
+          <div id="login-spinner" class="auth-spinner hidden"></div>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <span>Subsystem Isolation &bull; Role-Based Access Control</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FORCE-CHANGE-PASSWORD SCREEN
+       ============================================================ -->
+  <section id="change-password-screen" class="hidden" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:var(--bg-primary);padding:24px;padding-top:calc(24px + env(safe-area-inset-top));">
+    <div class="login-card" style="max-width:380px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:48px;margin-bottom:8px;">🔐</div>
+        <h1 style="font-size:22px;font-weight:800;color:var(--text-primary);margin-bottom:6px;">Set New Password</h1>
+        <p style="font-size:14px;color:var(--text-tertiary);">Your password must be changed before you can continue.</p>
+      </div>
+      <div id="change-pw-error" class="login-error hidden" style="margin-bottom:12px;"></div>
+      <form id="change-password-form">
+        <div class="form-group">
+          <label class="form-label" for="cp-current">Current Password</label>
+          <input type="password" id="cp-current" class="form-input" placeholder="Your current password" autocomplete="current-password" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cp-new">New Password</label>
+          <input type="password" id="cp-new" class="form-input" placeholder="At least 8 characters" autocomplete="new-password" required minlength="8" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cp-confirm">Confirm New Password</label>
+          <input type="password" id="cp-confirm" class="form-input" placeholder="Repeat new password" autocomplete="new-password" required minlength="8" />
+        </div>
+        <button type="submit" id="cp-submit-btn" class="btn btn-primary btn-block" style="margin-top:8px;">
+          <span id="cp-btn-text">Change Password</span>
+          <div id="cp-spinner" class="spinner hidden"></div>
+        </button>
+      </form>
+      <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:16px;">You will be signed in automatically after changing your password.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       APP SHELL
+       ============================================================ -->
+  <div id="app" class="hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect width="28" height="28" rx="8" fill="url(#logoGrad)"/>
+              <path d="M7 14L11 18L21 8" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6366f1"/>
+                  <stop offset="1" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="logo-text">TeamFlow</span>
+        </div>
+        <button id="sidebar-collapse-btn" class="icon-btn" title="Collapse sidebar">
+          <i data-lucide="panel-left-close" size="18"></i>
+        </button>
+      </div>
+
+      <!-- Current Subsystem Pill in Sidebar for Regular Users -->
+      <div id="sidebar-subsystem-display" class="sidebar-subsystem-info hidden">
+        <span class="sidebar-subsystem-dot" id="sidebar-subsystem-dot"></span>
+        <span id="sidebar-subsystem-name">General</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
+            <i data-lucide="layout-dashboard" size="18"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="nav-item" data-page="calendar" id="nav-calendar">
+            <i data-lucide="calendar" size="18"></i>
+            <span>Calendar</span>
+          </a>
+          <a href="#" class="nav-item" data-page="analytics" id="nav-analytics">
+            <i data-lucide="bar-chart-3" size="18"></i>
+            <span>Analytics</span>
+          </a>
+          <a href="#" class="nav-item" data-page="members" id="nav-members">
+            <i data-lucide="users" size="18"></i>
+            <span>Team Members</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">
+            <span>My Boards</span>
+            <button id="new-board-btn" class="icon-btn small" title="New Board">
+              <i data-lucide="plus" size="14"></i>
+            </button>
+          </div>
+          <div id="boards-nav-list">
+            <!-- Boards listed dynamically -->
+          </div>
+        </div>
+
+        <!-- Super Admin Only: Departments / Subsystems Section -->
+        <div class="nav-section" id="nav-section-admin" style="display: none;">
+          <div class="nav-section-title">
+            <span>Administration</span>
+          </div>
+          <a href="#" class="nav-item" data-page="admin" id="nav-admin">
+            <i data-lucide="building-2" size="18"></i>
+            <span>Departments</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="theme-toggle-btn" class="nav-item" title="Toggle theme">
+          <i data-lucide="moon" size="18" id="theme-icon"></i>
+          <span id="theme-label">Dark Mode</span>
+        </button>
+        <a href="/api/export" class="nav-item" title="Export backup">
+          <i data-lucide="download" size="18"></i>
+          <span>Export Backup</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content">
+
+      <!-- Admin Browsing Banner (When super_admin enters a subsystem) -->
+      <div id="admin-browsing-banner" class="admin-browsing-banner hidden">
+        <div class="admin-browsing-banner-left">
+          <span class="admin-browsing-banner-tag">Admin Browsing</span>
+          <span>Viewing Subsystem: <strong id="admin-browsing-name">Engineering</strong></span>
+        </div>
+        <button class="btn btn-ghost small" id="admin-return-btn">
+          <i data-lucide="arrow-left" size="14"></i>
+          Back to Admin Overview
+        </button>
+      </div>
+
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="sidebar-toggle-mobile" class="icon-btn" title="Toggle sidebar">
+            <i data-lucide="menu" size="20"></i>
+          </button>
+
+          <!-- Breadcrumbs when admin browsing -->
+          <div id="admin-breadcrumb" class="subsystem-breadcrumbs hidden">
+            <a href="#" class="subsystem-breadcrumb-link" id="breadcrumb-admin-link">
+              <i data-lucide="building-2" size="14"></i>
+              <span>Departments</span>
+            </a>
+            <span class="subsystem-breadcrumb-sep">/</span>
+            <span class="subsystem-breadcrumb-current" id="breadcrumb-subsystem-name">Engineering</span>
+          </div>
+
+          <!-- Subsystem Badge for non-admin -->
+          <div id="topbar-subsystem-indicator" class="subsystem-indicator-badge hidden">
+            <span class="subsystem-indicator-dot" id="topbar-subsystem-dot"></span>
+            <span id="topbar-subsystem-name">General</span>
+          </div>
+
+          <div class="search-wrapper">
+            <i data-lucide="search" size="16"></i>
+            <input type="text" id="global-search" placeholder="Search tasks, boards..." autocomplete="off" />
+            <kbd>Ctrl+K</kbd>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div id="overdue-badge" class="badge-btn hidden" title="Overdue tasks">
+            <i data-lucide="alert-circle" size="16"></i>
+            <span id="overdue-count">0</span>
+          </div>
+
+          <!-- Logged in User Identity & Logout -->
+          <div class="topbar-user-group">
+            <div class="topbar-user-info">
+              <span class="topbar-user-name" id="current-user-display-name">User</span>
+              <span class="topbar-user-role" id="current-user-role">Member</span>
+            </div>
+            <div class="user-avatar" id="current-user-avatar" title="Current User">
+              <span id="current-user-initial">?</span>
+            </div>
+            <button id="logout-btn" class="icon-btn topbar-logout-btn" title="Sign out">
+              <i data-lucide="log-out" size="18"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============================================================
+           BOTTOM TAB BAR (Mobile)
+           ============================================================ -->
+      <nav class="tab-bar" id="tab-bar">
+        <button class="tab-item active" data-page="dashboard" id="tab-dashboard" aria-label="Home">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="tab-item" data-page="boards" id="tab-boards" aria-label="Boards">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Boards</span>
+        </button>
+        <button class="tab-item" data-page="calendar" id="tab-calendar" aria-label="Calendar">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Calendar</span>
+        </button>
+        <button class="tab-item" data-page="notifications" id="tab-notifications" aria-label="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span>Alerts</span>
+          <span class="tab-badge hidden" id="notif-badge">0</span>
+        </button>
+        <button class="tab-item" data-page="me" id="tab-me" aria-label="Profile">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Me</span>
+        </button>
+      </nav>
+
+      <!-- Page Container -->
+      <div id="page-container">
+
+        <!-- ========== DASHBOARD PAGE ========== -->
+        <section id="page-dashboard" class="page active">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title" id="dashboard-heading">Dashboard</h1>
+              <p class="page-subtitle" id="dashboard-subtitle">Welcome back! Here's what's happening with your team.</p>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <button class="btn btn-ghost hidden" id="dashboard-back-to-admin-btn">
+                <i data-lucide="arrow-left" size="16"></i>
+                Admin Overview
+              </button>
+              <button class="btn btn-primary" id="dashboard-new-board-btn">
+                <i data-lucide="plus" size="16"></i>
+                New Board
+              </button>
+            </div>
+          </div>
+
+          <!-- Admin Aggregate Overview Container (Shown for super_admin in overview mode) -->
+          <div id="admin-overview-container" class="hidden" style="margin-bottom: 2rem;">
+            <div class="section-header">
+              <h2 class="section-title">Department Overview</h2>
+              <button class="btn btn-ghost small" id="overview-go-to-admin-btn">
+                <i data-lucide="external-link" size="14"></i> Manage Departments
+              </button>
+            </div>
+            <div class="subsystems-grid" id="dashboard-subsystems-grid"></div>
+          </div>
+
+          <!-- Stats Row -->
+          <div class="stats-grid" id="stats-grid">
+            <div class="stat-card" id="stat-total">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">
+                <i data-lucide="check-square" size="22"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-total-val">0</span>
+                <span class="stat-label">Total Tasks</span>
+              </div>
+            </div>
+            <div class="stat-card" id="stat-completed">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669)">
+                <i data-lucide="check-circle-2" size="22"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-completed-val">0</span>
+                <span class="stat-label">Completed</span>
+              </div>
+            </div>
+            <div class="stat-card" id="stat-overdue">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626)">
+                <i data-lucide="alert-triangle" size="22"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-overdue-val">0</span>
+                <span class="stat-label">Overdue</span>
+              </div>
+            </div>
+            <div class="stat-card" id="stat-rate">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">
+                <i data-lucide="trending-up" size="22"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-rate-val">0%</span>
+                <span class="stat-label">Completion Rate</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Boards Grid -->
+          <div class="section-header" id="boards-section-header">
+            <h2 class="section-title" id="boards-section-title">Your Boards</h2>
+          </div>
+          <div class="boards-grid" id="boards-grid">
+            <!-- Board cards rendered here -->
+          </div>
+
+          <!-- Due Soon -->
+          <div class="section-header" id="due-soon-section-header" style="margin-top: 2rem">
+            <h2 class="section-title">Due This Week</h2>
+          </div>
+          <div id="due-soon-list" class="due-soon-list">
+            <!-- Due soon tasks -->
+          </div>
+        </section>
+
+        <!-- ========== ADMIN PAGE ========== -->
+        <section id="page-admin" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Departments & Subsystems</h1>
+              <p class="page-subtitle">Manage organizational units, data isolation boundaries, and user accounts</p>
+            </div>
+            <button class="btn btn-primary" id="admin-new-subsystem-btn">
+              <i data-lucide="plus" size="16"></i>
+              New Department
+            </button>
+          </div>
+
+          <!-- Admin Stats Summary -->
+          <div class="admin-stats-summary">
+            <div class="admin-stat-box">
+              <div class="admin-stat-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">
+                <i data-lucide="building-2" size="22"></i>
+              </div>
+              <div>
+                <div class="admin-stat-num" id="admin-stat-subsystems">0</div>
+                <div class="admin-stat-lbl">Departments</div>
+              </div>
+            </div>
+            <div class="admin-stat-box">
+              <div class="admin-stat-icon" style="background: linear-gradient(135deg, #10b981, #059669)">
+                <i data-lucide="users" size="22"></i>
+              </div>
+              <div>
+                <div class="admin-stat-num" id="admin-stat-users">0</div>
+                <div class="admin-stat-lbl">Total Users</div>
+              </div>
+            </div>
+            <div class="admin-stat-box">
+              <div class="admin-stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">
+                <i data-lucide="layout-dashboard" size="22"></i>
+              </div>
+              <div>
+                <div class="admin-stat-num" id="admin-stat-boards">0</div>
+                <div class="admin-stat-lbl">Active Boards</div>
+              </div>
+            </div>
+            <div class="admin-stat-box">
+              <div class="admin-stat-icon" style="background: linear-gradient(135deg, #ec4899, #db2777)">
+                <i data-lucide="check-square" size="22"></i>
+              </div>
+              <div>
+                <div class="admin-stat-num" id="admin-stat-tasks">0</div>
+                <div class="admin-stat-lbl">Total Tasks</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header">
+            <h2 class="section-title">All Departments</h2>
+          </div>
+          <div class="subsystems-grid" id="admin-subsystems-grid">
+            <!-- Subsystem cards rendered here -->
+          </div>
+        </section>
+
+        <!-- ========== BOARD PAGE ========== -->
+        <section id="page-board" class="page">
+          <div class="page-header board-page-header">
+            <div class="board-title-group">
+              <button class="icon-btn back-btn" id="back-to-dashboard">
+                <i data-lucide="arrow-left" size="18"></i>
+              </button>
+              <div class="board-header-icon" id="board-header-icon">📋</div>
+              <div>
+                <h1 class="page-title" id="board-title">Board Name</h1>
+                <p class="page-subtitle" id="board-description"></p>
+              </div>
+            </div>
+            <div class="board-actions">
+              <div class="view-toggle">
+                <button class="view-btn active" id="view-kanban" title="Kanban view">
+                  <i data-lucide="columns" size="16"></i>
+                </button>
+                <button class="view-btn" id="view-list" title="List view">
+                  <i data-lucide="list" size="16"></i>
+                </button>
+              </div>
+              <button class="btn btn-ghost" id="board-filter-btn">
+                <i data-lucide="filter" size="16"></i>
+                Filter
+              </button>
+              <button class="btn btn-primary" id="add-task-btn">
+                <i data-lucide="plus" size="16"></i>
+                Add Task
+              </button>
+              <button class="icon-btn" id="board-settings-btn" title="Board settings">
+                <i data-lucide="settings" size="18"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Bar (hidden by default) -->
+          <div id="filter-bar" class="filter-bar hidden">
+            <select id="filter-priority" class="filter-select">
+              <option value="">All Priorities</option>
+              <option value="urgent">🔴 Urgent</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+            <select id="filter-member" class="filter-select">
+              <option value="">All Members</option>
+            </select>
+            <label class="filter-check">
+              <input type="checkbox" id="filter-overdue" /> Overdue only
+            </label>
+            <button class="btn btn-ghost small" id="clear-filters">Clear</button>
+          </div>
+
+          <!-- Kanban Board -->
+          <div id="kanban-board" class="kanban-board">
+            <!-- Buckets rendered here -->
+          </div>
+        </section>
+
+        <!-- ========== CALENDAR PAGE ========== -->
+        <section id="page-calendar" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Calendar</h1>
+              <p class="page-subtitle">Task due dates at a glance</p>
+            </div>
+            <div class="calendar-nav">
+              <button class="icon-btn" id="cal-prev">
+                <i data-lucide="chevron-left" size="20"></i>
+              </button>
+              <span id="cal-month-label" class="cal-month-label">October 2026</span>
+              <button class="icon-btn" id="cal-next">
+                <i data-lucide="chevron-right" size="20"></i>
+              </button>
+              <button class="btn btn-ghost small" id="cal-today">Today</button>
+            </div>
+          </div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <div id="calendar-task-popover" class="calendar-popover hidden"></div>
+        </section>
+
+        <!-- ========== ANALYTICS PAGE ========== -->
+        <section id="page-analytics" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Analytics</h1>
+              <p class="page-subtitle">Team productivity insights</p>
+            </div>
+          </div>
+          <div class="analytics-grid">
+            <div class="chart-card wide">
+              <div class="chart-card-header">
+                <span class="chart-title">Tasks by Board</span>
+              </div>
+              <canvas id="chart-by-board" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <span class="chart-title">Tasks by Priority</span>
+              </div>
+              <canvas id="chart-by-priority" height="220"></canvas>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-header">
+                <span class="chart-title">Team Workload</span>
+              </div>
+              <canvas id="chart-by-member" height="220"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== MEMBERS PAGE ========== -->
+        <section id="page-members" class="page">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Team Members</h1>
+              <p class="page-subtitle">Manage your team and track workload</p>
+            </div>
+            <button class="btn btn-primary" id="add-member-btn">
+              <i data-lucide="user-plus" size="16"></i>
+              Add Member
+            </button>
+          </div>
+          <div class="members-grid" id="members-grid">
+            <!-- Member cards rendered here -->
+          </div>
+        </section>
+
+      </div> <!-- /page-container -->
+    </main>
+  </div>
+
+  <!-- ============================================================
+       MODALS
+       ============================================================ -->
+
+  <!-- Subsystem Modal (Create / Edit Subsystem) -->
+  <div id="modal-new-subsystem" class="modal-overlay hidden">
+    <div class="modal glass-modal" style="max-width: 500px">
+      <div class="modal-header">
+        <h2 class="modal-title" id="subsystem-modal-title">Create Department</h2>
+        <button class="icon-btn modal-close" data-modal="modal-new-subsystem"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Department Name *</label>
+          <input type="text" id="new-subsystem-name" class="form-input" placeholder="e.g. Engineering, Marketing, Operations" maxlength="60" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="new-subsystem-desc" class="form-input" placeholder="Department purpose, scope or team description..." rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Icon</label>
+            <div class="emoji-picker" id="subsystem-emoji-picker">
+              <span class="emoji-option selected" data-emoji="🏢">🏢</span>
+              <span class="emoji-option" data-emoji="💻">💻</span>
+              <span class="emoji-option" data-emoji="📣">📣</span>
+              <span class="emoji-option" data-emoji="🎨">🎨</span>
+              <span class="emoji-option" data-emoji="⚙️">⚙️</span>
+              <span class="emoji-option" data-emoji="📊">📊</span>
+              <span class="emoji-option" data-emoji="🛡️">🛡️</span>
+              <span class="emoji-option" data-emoji="🚀">🚀</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <div class="color-picker" id="subsystem-color-picker">
+              <span class="color-option selected" data-color="#6366f1" style="background:#6366f1"></span>
+              <span class="color-option" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+              <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+              <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+              <span class="color-option" data-color="#f59e0b" style="background:#f59e0b"></span>
+              <span class="color-option" data-color="#10b981" style="background:#10b981"></span>
+              <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+              <span class="color-option" data-color="#f97316" style="background:#f97316"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost danger" id="subsystem-delete-btn" style="display:none">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-modal="modal-new-subsystem">Cancel</button>
+        <button class="btn btn-primary" id="create-subsystem-submit">Create Department</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subsystem Users Management Modal -->
+  <div id="modal-subsystem-users" class="modal-overlay hidden">
+    <div class="modal glass-modal" style="max-width: 640px">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="subsystem-users-modal-title">Department Users</h2>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;" id="subsystem-users-subtitle"></p>
+        </div>
+        <button class="icon-btn modal-close" data-modal="modal-subsystem-users"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="user-mgmt-header">
+          <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);" id="subsystem-users-count">0 Users</span>
+          <button class="btn btn-primary small" id="subsystem-add-user-btn">
+            <i data-lucide="user-plus" size="14"></i> Add User
+          </button>
+        </div>
+        <div class="user-mgmt-list" id="subsystem-users-list">
+          <!-- Users listed here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-modal="modal-subsystem-users">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subsystem User Create / Edit Modal -->
+  <div id="modal-new-user" class="modal-overlay hidden">
+    <div class="modal glass-modal" style="max-width: 460px">
+      <div class="modal-header">
+        <h2 class="modal-title" id="user-modal-title">Add User</h2>
+        <button class="icon-btn modal-close" data-modal="modal-new-user"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="member-avatar-preview">
+          <div class="member-avatar large" id="user-avatar-preview" style="background: #6366f1">U</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Username *</label>
+            <input type="text" id="user-username-input" class="form-input" placeholder="e.g. jdoe" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Display Name *</label>
+            <input type="text" id="user-displayname-input" class="form-input" placeholder="e.g. John Doe" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="user-password-label">Password *</label>
+          <input type="password" id="user-password-input" class="form-input" placeholder="••••••••" />
+          <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; display: block;" id="user-password-help">Leave blank to keep existing password when editing.</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Role *</label>
+            <select id="user-role-input" class="form-input">
+              <option value="member">Member</option>
+              <option value="subsystem_admin">Subsystem Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="user-email-input" class="form-input" placeholder="user@company.com" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Avatar Color</label>
+          <div class="color-picker" id="user-color-picker">
+            <span class="color-option selected" data-color="#6366f1" style="background:#6366f1"></span>
+            <span class="color-option" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+            <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+            <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+            <span class="color-option" data-color="#f59e0b" style="background:#f59e0b"></span>
+            <span class="color-option" data-color="#10b981" style="background:#10b981"></span>
+            <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+            <span class="color-option" data-color="#f97316" style="background:#f97316"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost danger" id="user-delete-btn" style="display:none">Delete User</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-modal="modal-new-user">Cancel</button>
+        <button class="btn btn-primary" id="user-submit-btn">Save User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Board Modal -->
+  <div id="modal-new-board" class="modal-overlay hidden">
+    <div class="modal glass-modal" style="max-width: 500px">
+      <div class="modal-header">
+        <h2 class="modal-title">Create New Board</h2>
+        <button class="icon-btn modal-close" data-modal="modal-new-board"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Board Name *</label>
+          <input type="text" id="new-board-name" class="form-input" placeholder="e.g., Product Roadmap" maxlength="60" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="new-board-desc" class="form-input" placeholder="What is this board for?" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Icon</label>
+            <div class="emoji-picker" id="board-emoji-picker">
+              <span class="emoji-option selected" data-emoji="📋">📋</span>
+              <span class="emoji-option" data-emoji="🚀">🚀</span>
+              <span class="emoji-option" data-emoji="💡">💡</span>
+              <span class="emoji-option" data-emoji="🎯">🎯</span>
+              <span class="emoji-option" data-emoji="🛠️">🛠️</span>
+              <span class="emoji-option" data-emoji="📈">📈</span>
+              <span class="emoji-option" data-emoji="🎨">🎨</span>
+              <span class="emoji-option" data-emoji="⚡">⚡</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <div class="color-picker" id="board-color-picker">
+              <span class="color-option selected" data-color="#6366f1" style="background:#6366f1"></span>
+              <span class="color-option" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+              <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+              <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+              <span class="color-option" data-color="#f59e0b" style="background:#f59e0b"></span>
+              <span class="color-option" data-color="#10b981" style="background:#10b981"></span>
+              <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+              <span class="color-option" data-color="#f97316" style="background:#f97316"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-modal="modal-new-board">Cancel</button>
+        <button class="btn btn-primary" id="create-board-submit">Create Board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New/Edit Task Modal -->
+  <div id="modal-task" class="modal-overlay hidden">
+    <div class="modal glass-modal task-modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="task-modal-title">New Task</h2>
+        <button class="icon-btn modal-close" data-modal="modal-task"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body task-modal-body">
+        <div class="task-modal-main">
+          <div class="form-group">
+            <label class="form-label">Task Title *</label>
+            <input type="text" id="task-title-input" class="form-input" placeholder="What needs to be done?" maxlength="120" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="task-desc-input" class="form-input" placeholder="Add more details..." rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select id="task-priority-input" class="form-input">
+                <option value="low">🟢 Low</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="high">🟠 High</option>
+                <option value="urgent">🔴 Urgent</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Due Date</label>
+              <input type="date" id="task-due-input" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bucket</label>
+            <select id="task-bucket-input" class="form-input">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Assignees</label>
+            <div id="task-assignees-picker" class="assignee-picker">
+              <!-- Member chips rendered here -->
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Labels</label>
+            <div id="task-labels-picker" class="labels-picker">
+              <!-- Label chips -->
+            </div>
+          </div>
+
+          <!-- Checklist Section -->
+          <div class="form-group" id="checklist-section" style="display:none">
+            <label class="form-label">Checklist</label>
+            <div id="checklist-items"></div>
+            <div class="checklist-add-row">
+              <input type="text" id="checklist-new-item" class="form-input small" placeholder="Add checklist item..." />
+              <button class="btn btn-ghost small" id="checklist-add-btn">Add</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Sidebar (for existing tasks) -->
+        <div class="task-modal-sidebar" id="task-modal-sidebar" style="display:none">
+          <!-- Attachments -->
+          <div class="sidebar-section">
+            <div class="sidebar-section-header">
+              <i data-lucide="paperclip" size="14"></i>
+              <span>Attachments</span>
+            </div>
+            <div id="attachment-list"></div>
+            <label class="btn btn-ghost small full-width upload-label" for="attachment-file-input">
+              <i data-lucide="upload" size="14"></i> Upload File
+            </label>
+            <input type="file" id="attachment-file-input" multiple style="display:none" />
+          </div>
+
+          <!-- Comments -->
+          <div class="sidebar-section">
+            <div class="sidebar-section-header">
+              <i data-lucide="message-square" size="14"></i>
+              <span>Comments</span>
+            </div>
+            <div id="comments-list"></div>
+            <div class="comment-input-row">
+              <textarea id="comment-input" class="form-input small" placeholder="Write a comment..." rows="2"></textarea>
+              <button class="btn btn-primary small" id="comment-submit-btn">Post</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost danger" id="task-delete-btn" style="display:none">
+          <i data-lucide="trash-2" size="14"></i> Delete
+        </button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-modal="modal-task">Cancel</button>
+        <button class="btn btn-primary" id="task-submit-btn">Create Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Modal -->
+  <div id="modal-member" class="modal-overlay hidden">
+    <div class="modal glass-modal" style="max-width: 420px">
+      <div class="modal-header">
+        <h2 class="modal-title" id="member-modal-title">Add Team Member</h2>
+        <button class="icon-btn modal-close" data-modal="modal-member"><i data-lucide="x" size="18"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="member-avatar-preview">
+          <div class="member-avatar large" id="member-avatar-preview" style="background: #6366f1">A</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" id="member-name-input" class="form-input" placeholder="e.g., Alice Johnson" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <input type="text" id="member-role-input" class="form-input" placeholder="e.g., Developer, Designer..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email (optional)</label>
+          <input type="email" id="member-email-input" class="form-input" placeholder="alice@company.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Avatar Color</label>
+          <div class="color-picker" id="member-color-picker">
+            <span class="color-option selected" data-color="#6366f1" style="background:#6366f1"></span>
+            <span class="color-option" data-color="#8b5cf6" style="background:#8b5cf6"></span>
+            <span class="color-option" data-color="#ec4899" style="background:#ec4899"></span>
+            <span class="color-option" data-color="#ef4444" style="background:#ef4444"></span>
+            <span class="color-option" data-color="#f59e0b" style="background:#f59e0b"></span>
+            <span class="color-option" data-color="#10b981" style="background:#10b981"></span>
+            <span class="color-option" data-color="#06b6d4" style="background:#06b6d4"></span>
+            <span class="color-option" data-color="#f97316" style="background:#f97316"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost danger" id="member-delete-btn" style="display:none">Delete</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" data-modal="modal-member">Cancel</button>
+        <button class="btn btn-primary" id="member-submit-btn">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       NOTIFICATIONS PAGE
+       ============================================================ -->
+  <section id="page-notifications" class="page" style="display:none;">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">Stay up to date with your team</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="notif-read-all-btn">Mark all read</button>
+    </div>
+    <div id="notifications-list" class="notification-list" style="padding:0 0 80px;">
+      <div class="notification-empty" id="notifications-empty">
+        <div class="notification-empty-icon">🔔</div>
+        <p>No notifications yet</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ME / SETTINGS PAGE
+       ============================================================ -->
+  <section id="page-me" class="page" style="display:none;">
+    <div class="profile-header">
+      <div class="profile-avatar" id="me-avatar" style="background:var(--accent);">A</div>
+      <div class="profile-name" id="me-name">User Name</div>
+      <div class="profile-role" id="me-role">Member</div>
+    </div>
+
+    <div style="padding:0 16px 80px;">
+      <p class="ios-section-header">Account</p>
+      <div class="ios-section">
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:rgba(0,122,255,0.12);">👤</div>
+          <div class="ios-row-label">Username</div>
+          <div class="ios-row-value" id="me-username">—</div>
+        </div>
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:rgba(52,199,89,0.12);">✉️</div>
+          <div class="ios-row-label">Email</div>
+          <div class="ios-row-value" id="me-email">—</div>
+        </div>
+        <div class="ios-row ios-row-chevron" id="me-change-pw-row" style="cursor:pointer;">
+          <div class="ios-row-icon" style="background:rgba(255,149,0,0.12);">🔑</div>
+          <div class="ios-row-label">Change Password</div>
+        </div>
+      </div>
+
+      <p class="ios-section-header">Appearance</p>
+      <div class="ios-section">
+        <div class="ios-row" style="justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="ios-row-icon" style="background:rgba(88,86,214,0.12);">🌙</div>
+            <div class="ios-row-label">Dark Mode</div>
+          </div>
+          <button id="me-theme-toggle" class="btn btn-ghost btn-sm" style="font-size:13px;">Toggle</button>
+        </div>
+      </div>
+
+      <p class="ios-section-header">Notifications</p>
+      <div class="ios-section" id="notif-prefs-section">
+        <div class="ios-row"><div class="ios-row-label" style="color:var(--text-muted);font-size:13px;">Loading preferences…</div></div>
+      </div>
+
+      <p class="ios-section-header">Session</p>
+      <div class="ios-section">
+        <div class="ios-row" id="me-logout-row" style="cursor:pointer;">
+          <div class="ios-row-icon" style="background:rgba(255,59,48,0.12);">🚪</div>
+          <div class="ios-row-label" style="color:var(--ios-red);">Sign Out</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/members.js"></script>
+  <script src="/js/board.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/calendar.js"></script>
+  <script src="/js/analytics.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/push.js"></script>
+
+  <!-- Change-password form handler -->
+  <script>
+    document.getElementById('change-password-form')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const current = document.getElementById('cp-current').value;
+      const newPw   = document.getElementById('cp-new').value;
+      const confirm = document.getElementById('cp-confirm').value;
+      const errEl   = document.getElementById('change-pw-error');
+      const btn     = document.getElementById('cp-submit-btn');
+      const btnText = document.getElementById('cp-btn-text');
+      const spinner = document.getElementById('cp-spinner');
+      errEl.classList.add('hidden');
+      if (newPw !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
+      btn.disabled = true; btnText.style.display='none'; spinner.classList.remove('hidden');
+      try {
+        await Api.auth.changePassword({ current, newPassword: newPw });
+        document.getElementById('change-password-screen').classList.add('hidden');
+        if (window.App) await App.bootstrapApp();
+      } catch(err) {
+        errEl.textContent = err.message || 'Failed to change password. Try again.';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btnText.style.display=''; spinner.classList.add('hidden');
+      }
+    });
+  </script>
+
+  <!-- Me page wiring -->
+  <script>
+    document.getElementById('me-change-pw-row')?.addEventListener('click', () => {
+      if (window.App) App.showChangePassword();
+    });
+    document.getElementById('me-logout-row')?.addEventListener('click', () => {
+      if (window.App) App.logout();
+    });
+    document.getElementById('me-theme-toggle')?.addEventListener('click', () => {
+      if (window.App) App.toggleTheme();
+    });
+  </script>
+
+  <!-- Tab bar navigation -->
+  <script>
+    document.querySelectorAll('.tab-item[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.page;
+        if (window.App && typeof App.navigateTo === 'function') App.navigateTo(page);
+      });
+    });
+  </script>
+
+  <!-- Service Worker: skip on Capacitor native -->
+  <script>
+    if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('✅ Service Worker registered (scope:', reg.scope, ')');
+        }).catch(err => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

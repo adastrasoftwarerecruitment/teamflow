@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: teamflow-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: TURSO_URL
+        sync: false          # Set in Render dashboard
+      - key: TURSO_AUTH_TOKEN
+        sync: false          # Set in Render dashboard
+      - key: CORS_ORIGINS
+        sync: false          # e.g. https://teamflow-api.onrender.com
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false          # Paste minified JSON in Render dashboard

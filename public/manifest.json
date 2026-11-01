@@ -1,0 +1,22 @@
+{
+  "name": "TeamFlow — Task Planner",
+  "short_name": "TeamFlow",
+  "description": "Team task management with subsystem isolation and role-based access control",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0d1a",
+  "theme_color": "#6366f1",
+  "scope": "/",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/assets/icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
