@@ -97,8 +97,17 @@ async function initDriver() {
     });
     console.log('📡 Connected to Turso cloud database');
   } else {
-    // Local SQLite via better-sqlite3
-    const Database = require('better-sqlite3');
+    // Local SQLite via better-sqlite3 (optional dependency)
+    let Database;
+    try {
+      Database = require('better-sqlite3');
+    } catch (e) {
+      throw new Error(
+        'better-sqlite3 is not available (failed to build or not installed). ' +
+        'Set TURSO_URL + TURSO_AUTH_TOKEN to use Turso cloud instead, ' +
+        'or run: npm install better-sqlite3'
+      );
+    }
     const DB_PATH = path.join(__dirname, '..', 'data', 'planner.db');
     const dataDir = path.dirname(DB_PATH);
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
