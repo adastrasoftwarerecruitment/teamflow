@@ -16,6 +16,7 @@ const App = {
     Dashboard.bindEvents();
     CalendarView.bindEvents();
     Admin.bindEvents();
+    Members.bindEvents();
 
     // Check existing theme
     this.initTheme();
@@ -155,8 +156,8 @@ const App = {
   async openTaskById(taskId, boardId) {
     // Navigate to board and open task detail
     try {
-      if (boardId) await Board.load(boardId);
-      if (taskId) setTimeout(() => Board.openTaskDetail(taskId), 300);
+      if (boardId) await Board.open(boardId);
+      if (taskId) setTimeout(() => Board.openEditTask(taskId), 400);
     } catch (e) { console.warn('openTaskById error:', e); }
   },
 
@@ -317,7 +318,7 @@ const App = {
 
     // Load page-specific data
     if (page === 'dashboard')     Dashboard.load();
-    if (page === 'boards')        Dashboard.load();
+    if (page === 'boards')        this.loadBoardsPage();
     if (page === 'admin')         Admin.load();
     if (page === 'calendar')      CalendarView.load();
     if (page === 'analytics')     Analytics.load();
@@ -545,6 +546,23 @@ const App = {
       lucide.createIcons();
       if (this._currentPage === 'analytics') Analytics.load();
     });
+
+    // Sidebar export button — fetch all boards and tasks as JSON
+    document.getElementById('sidebar-export-btn')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const boards = await Api.boards.getAll();
+        const blob = new Blob([JSON.stringify({ boards, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'teamflow-backup.json';
+        a.click(); URL.revokeObjectURL(url);
+        UI.toast('Backup exported!', 'success');
+      } catch (e) { UI.toast('Export failed: ' + e.message, 'error'); }
+    });
+
+    // Boards page new board button
+    document.getElementById('boards-page-new-board-btn')?.addEventListener('click', () => Dashboard.openNewBoard());
   },
 
   initTheme() {
@@ -575,6 +593,47 @@ const App = {
       }
     } catch (e) {
       console.warn('Search error:', e);
+    }
+  },
+
+  async loadBoardsPage() {
+    try {
+      const params = {};
+      const currentSubsystem = this.getCurrentSubsystem();
+      if (currentSubsystem) params._subsystem = currentSubsystem.id;
+      const boards = await Api.boards.getAll(params);
+      const grid = document.getElementById('boards-page-grid');
+      if (!grid) return;
+      if (!boards.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)">
+          <div style="font-size:3rem;margin-bottom:1rem">📋</div>
+          <div style="font-weight:600;margin-bottom:0.5rem">No boards yet</div>
+          <button class="btn btn-primary" onclick="Dashboard.openNewBoard()">Create your first board</button>
+        </div>`;
+        return;
+      }
+      grid.innerHTML = boards.map(b => {
+        const total = b.taskCount || 0;
+        const completed = b.completedCount || 0;
+        const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+        return `<div class="board-card" data-board-id="${b.id}" style="--board-color:${b.color};cursor:pointer">
+          <div class="board-card-header">
+            <div class="board-card-icon">${b.icon || '📋'}</div>
+            <div class="board-card-name">${b.name}</div>
+          </div>
+          <div class="board-card-desc">${b.description || 'No description'}</div>
+          <div class="board-card-progress">
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;background:${b.color}"></div></div>
+            <div class="progress-labels"><span>${completed} of ${total} tasks</span><span>${pct}%</span></div>
+          </div>
+        </div>`;
+      }).join('');
+      grid.querySelectorAll('.board-card').forEach(card => {
+        card.addEventListener('click', () => Board.open(card.dataset.boardId));
+      });
+      lucide.createIcons();
+    } catch (e) {
+      console.error('loadBoardsPage error:', e);
     }
   }
 };

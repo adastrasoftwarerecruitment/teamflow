@@ -207,7 +207,7 @@
           <i data-lucide="moon" size="18" id="theme-icon"></i>
           <span id="theme-label">Dark Mode</span>
         </button>
-        <a href="/api/export" class="nav-item" title="Export backup">
+        <a href="#" class="nav-item" id="sidebar-export-btn" title="Export backup">
           <i data-lucide="download" size="18"></i>
           <span>Export Backup</span>
         </a>
@@ -588,6 +588,88 @@
           </div>
         </section>
 
+
+        <!-- ========== BOARDS PAGE (alias for dashboard) ========== -->
+        <section id="page-boards" class="page">
+          <!-- Boards page reuses the dashboard board grid -->
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">All Boards</h1>
+              <p class="page-subtitle">Open any board to manage tasks</p>
+            </div>
+            <button class="btn btn-primary" id="boards-page-new-board-btn">
+              <i data-lucide="plus" size="16"></i> New Board
+            </button>
+          </div>
+          <div class="boards-grid" id="boards-page-grid"></div>
+        </section>
+
+        <!-- ========== NOTIFICATIONS PAGE ========== -->
+        <section id="page-notifications" class="page">
+          <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <h1 class="page-title">Notifications</h1>
+              <p class="page-subtitle">Stay up to date with your team</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="notif-read-all-btn">Mark all read</button>
+          </div>
+          <div id="notifications-list" class="notification-list" style="padding:0 0 80px;">
+            <div class="notification-empty" id="notifications-empty">
+              <div class="notification-empty-icon">🔔</div>
+              <p>No notifications yet</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== ME / SETTINGS PAGE ========== -->
+        <section id="page-me" class="page">
+          <div class="profile-header">
+            <div class="profile-avatar" id="me-avatar" style="background:var(--accent);">A</div>
+            <div class="profile-name" id="me-name">User Name</div>
+            <div class="profile-role" id="me-role">Member</div>
+          </div>
+          <div style="padding:0 16px 80px;">
+            <p class="ios-section-header">Account</p>
+            <div class="ios-section">
+              <div class="ios-row">
+                <div class="ios-row-icon" style="background:rgba(0,122,255,0.12);">👤</div>
+                <div class="ios-row-label">Username</div>
+                <div class="ios-row-value" id="me-username">—</div>
+              </div>
+              <div class="ios-row">
+                <div class="ios-row-icon" style="background:rgba(52,199,89,0.12);">✉️</div>
+                <div class="ios-row-label">Email</div>
+                <div class="ios-row-value" id="me-email">—</div>
+              </div>
+              <div class="ios-row ios-row-chevron" id="me-change-pw-row" style="cursor:pointer;">
+                <div class="ios-row-icon" style="background:rgba(255,149,0,0.12);">🔑</div>
+                <div class="ios-row-label">Change Password</div>
+              </div>
+            </div>
+            <p class="ios-section-header">Appearance</p>
+            <div class="ios-section">
+              <div class="ios-row" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div class="ios-row-icon" style="background:rgba(88,86,214,0.12);">🌙</div>
+                  <div class="ios-row-label">Dark Mode</div>
+                </div>
+                <button id="me-theme-toggle" class="btn btn-ghost btn-sm" style="font-size:13px;">Toggle</button>
+              </div>
+            </div>
+            <p class="ios-section-header">Notifications</p>
+            <div class="ios-section" id="notif-prefs-section">
+              <div class="ios-row"><div class="ios-row-label" style="color:var(--text-muted);font-size:13px;">Loading preferences…</div></div>
+            </div>
+            <p class="ios-section-header">Session</p>
+            <div class="ios-section">
+              <div class="ios-row" id="me-logout-row" style="cursor:pointer;">
+                <div class="ios-row-icon" style="background:rgba(255,59,48,0.12);">🚪</div>
+                <div class="ios-row-label" style="color:var(--ios-red);">Sign Out</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div> <!-- /page-container -->
     </main>
   </div>
@@ -941,79 +1023,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       NOTIFICATIONS PAGE
-       ============================================================ -->
-  <section id="page-notifications" class="page" style="display:none;">
-    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <h1 class="page-title">Notifications</h1>
-        <p class="page-subtitle">Stay up to date with your team</p>
-      </div>
-      <button class="btn btn-ghost btn-sm" id="notif-read-all-btn">Mark all read</button>
-    </div>
-    <div id="notifications-list" class="notification-list" style="padding:0 0 80px;">
-      <div class="notification-empty" id="notifications-empty">
-        <div class="notification-empty-icon">🔔</div>
-        <p>No notifications yet</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- ============================================================
-       ME / SETTINGS PAGE
-       ============================================================ -->
-  <section id="page-me" class="page" style="display:none;">
-    <div class="profile-header">
-      <div class="profile-avatar" id="me-avatar" style="background:var(--accent);">A</div>
-      <div class="profile-name" id="me-name">User Name</div>
-      <div class="profile-role" id="me-role">Member</div>
-    </div>
-
-    <div style="padding:0 16px 80px;">
-      <p class="ios-section-header">Account</p>
-      <div class="ios-section">
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:rgba(0,122,255,0.12);">👤</div>
-          <div class="ios-row-label">Username</div>
-          <div class="ios-row-value" id="me-username">—</div>
-        </div>
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:rgba(52,199,89,0.12);">✉️</div>
-          <div class="ios-row-label">Email</div>
-          <div class="ios-row-value" id="me-email">—</div>
-        </div>
-        <div class="ios-row ios-row-chevron" id="me-change-pw-row" style="cursor:pointer;">
-          <div class="ios-row-icon" style="background:rgba(255,149,0,0.12);">🔑</div>
-          <div class="ios-row-label">Change Password</div>
-        </div>
-      </div>
-
-      <p class="ios-section-header">Appearance</p>
-      <div class="ios-section">
-        <div class="ios-row" style="justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div class="ios-row-icon" style="background:rgba(88,86,214,0.12);">🌙</div>
-            <div class="ios-row-label">Dark Mode</div>
-          </div>
-          <button id="me-theme-toggle" class="btn btn-ghost btn-sm" style="font-size:13px;">Toggle</button>
-        </div>
-      </div>
-
-      <p class="ios-section-header">Notifications</p>
-      <div class="ios-section" id="notif-prefs-section">
-        <div class="ios-row"><div class="ios-row-label" style="color:var(--text-muted);font-size:13px;">Loading preferences…</div></div>
-      </div>
-
-      <p class="ios-section-header">Session</p>
-      <div class="ios-section">
-        <div class="ios-row" id="me-logout-row" style="cursor:pointer;">
-          <div class="ios-row-icon" style="background:rgba(255,59,48,0.12);">🚪</div>
-          <div class="ios-row-label" style="color:var(--ios-red);">Sign Out</div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- Toast container -->
   <div id="toast-container"></div>
